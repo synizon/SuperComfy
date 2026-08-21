@@ -52,6 +52,8 @@ if [ -d "$VENV_DIR" ]; then
   fi
 fi
 if [ ! -x "$VENV_PY" ]; then
+  # Explicit install: uv configured with python-downloads=manual won't fetch on demand.
+  uv python install 3.13 || die "Could not install Python 3.13 (uv python install failed)"
   uv venv --python 3.13 "$VENV_DIR" || die "Could not create the venv (uv venv failed)"
 fi
 ok "venv: $VENV_DIR"
