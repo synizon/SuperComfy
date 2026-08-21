@@ -7,8 +7,9 @@
 detect_cuda_version() { # echoes "MAJOR.MINOR" or nothing
   local v=""
   if command -v nvidia-smi >/dev/null 2>&1; then
-    # sed -nE, not grep -oP: PCRE grep is unreliable on minimal images
-    v="$(nvidia-smi 2>/dev/null | sed -nE 's/.*CUDA Version: ([0-9]+\.[0-9]+).*/\1/p' | head -1)"
+    # sed -nE, not grep -oP: PCRE grep is unreliable on minimal images.
+    # Old drivers print "CUDA Version: 13.0", 610+ prints "CUDA UMD Version: 13.3".
+    v="$(nvidia-smi 2>/dev/null | sed -nE 's/.*CUDA (UMD )?Version: *([0-9]+\.[0-9]+).*/\2/p' | head -1)"
   fi
   if [ -z "$v" ] && command -v nvcc >/dev/null 2>&1; then
     v="$(nvcc --version 2>/dev/null | sed -nE 's/.*release ([0-9]+\.[0-9]+).*/\1/p' | head -1)"
