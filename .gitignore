@@ -1,0 +1,22 @@
+# ComfyUI install (cloned by install.sh)
+comfy/
+
+# runtime state: venv, pip cache, downloads, markers, jobs
+cache/
+
+# secrets & local settings
+.env
+
+# private agent instructions
+CLAUDE.md
+
+# build/verify artifacts
+proof/
+dist/
+experiments/
+docs/todoprs/
+docs/finishedprs/
+
+__pycache__/
+*.pyc
+*.log
