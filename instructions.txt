@@ -1,0 +1,40 @@
+SUPERCOMFY — QUICK INSTRUCTIONS
+===============================
+
+1. INSTALL
+   ./install.sh
+   Installs Python 3.13, PyTorch for your CUDA version (13.0-13.3 supported,
+   12.6+ works), and the latest ComfyUI release into comfy/.
+   Tip: ./install.sh --dry-run shows what would happen without installing.
+
+2. RUN
+   ./run.sh
+   Pick a speed preset (1=pytorch default, 2=sage fastest, 3=flash,
+   4=comfy-kitchen). Open the printed URL: http://127.0.0.1:8188 locally,
+   or the https://...proxy.runpod.net link on RunPod.
+   Change the preset later: ./run.sh --select
+   Stop with Ctrl+C.
+
+3. UPDATE
+   ./update.sh
+   Moves ComfyUI to the newest release and refreshes its dependencies
+   without breaking torch.
+
+4. PASSWORD
+   Edit .env and set:  COMFY_AUTH=yourpassword
+   The web UI then asks for user "comfy" + that password. Required before
+   exposing ComfyUI to the internet (RunPod does this automatically).
+
+5. JUPYTERLAB (optional)
+   Install once:  SUPERCOMFY_JUPYTER=1 ./install.sh
+   Enable in .env: JUPYTER_ENABLE=1  (on RunPod it is on automatically)
+   The access token is JUPYTER_TOKEN from .env, or printed at start.
+
+6. SETTINGS
+   All settings live in .env (created from .env.example). Ports, password,
+   attention preset, extra ComfyUI flags — each variable is documented there.
+
+PROBLEMS?
+- "not a CUDA build" -> re-run ./install.sh (a custom node replaced torch).
+- "No NVIDIA CUDA detected" -> install/upgrade the NVIDIA driver (580+).
+- Port in use -> another ComfyUI is running, or change COMFY_PORT in .env.
