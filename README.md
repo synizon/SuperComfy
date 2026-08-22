@@ -62,17 +62,40 @@ cache/            venv + runtime state (gitignored)
 install.sh        installer
 run.sh            launcher
 update.sh         updater
-downloadnodes.sh  popular custom nodes (coming in the next release)
-downloadmodels.sh model downloads + LoRA import (coming in the next release)
-supercomfy/       SuperComfy's own code
+downloadnodes.sh  popular custom nodes
+downloadmodels.sh model downloads + LoRA import
+supercomfy/       SuperComfy's own code (edit nodes.txt / models.json here)
 ```
 
 ## Custom nodes and dependency safety
 
-Custom nodes often pip-install their own requirements and silently replace
-torch with a CPU build. SuperComfy installs every node's requirements under a
-constraints file that pins torch/torchvision/torchaudio/numpy, then verifies
-torch still sees CUDA — and repairs it if not.
+```bash
+./downloadnodes.sh        # pick nodes from a menu
+./downloadnodes.sh --all  # install everything in supercomfy/nodes.txt
+```
+
+The node list lives in `supercomfy/nodes.txt` — one git URL per line, edit
+freely. Custom nodes often pip-install their own requirements and silently
+replace torch with a CPU build. SuperComfy installs every node's requirements
+under a constraints file that pins torch/torchvision/torchaudio/numpy, then
+verifies torch still sees CUDA — and repairs it if not. A node whose
+requirements conflict is refused instead of breaking the install.
+
+## Models and LoRAs
+
+```bash
+./downloadmodels.sh                       # category menu from supercomfy/models.json
+./downloadmodels.sh --all                 # everything in the catalog
+./downloadmodels.sh --lora <target>       # import a LoRA
+```
+
+The catalog lives in `supercomfy/models.json` (name, url, dest folder) — edit
+freely. Downloads resume, and files already present at the right size are
+skipped. Set `HF_TOKEN` in `.env` for gated/faster HuggingFace downloads.
+
+`--lora` accepts a HuggingFace file or repo link, a direct URL, or a local
+`.zip` / `.safetensors` / `.pt` / `.ckpt` file. Zips are extracted flat into
+`comfy/models/loras/` keeping only the weight files.
 
 ## RunPod
 
