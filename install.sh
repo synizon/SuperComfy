@@ -163,5 +163,26 @@ cuda_wheel_gate
 requirements_hash > "$VENV_DIR/.installed"
 [ -f "$ENV_FILE" ] || cp "$SCRIPT_DIR/.env.example" "$ENV_FILE" 2>/dev/null || true
 
+# Desktop launcher, so run.sh starts from the app menu (no terminal needed).
+# Skipped on headless machines (RunPod pods, SSH sessions without a display).
+if [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] && [ -z "${RUNPOD_POD_ID:-}" ]; then
+  app_dir="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+  mkdir -p "$app_dir"
+  cat > "$app_dir/supercomfy.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=SuperComfy
+Comment=Start ComfyUI (dashboard at http://localhost:8080)
+Exec=$SUPERCOMFY_ROOT/run.sh
+Path=$SUPERCOMFY_ROOT
+Terminal=true
+Icon=applications-graphics
+Categories=Graphics;
+EOF
+  command -v update-desktop-database >/dev/null 2>&1 \
+    && update-desktop-database "$app_dir" 2>/dev/null || true
+  ok "App-menu launcher created — search for ${C_BOLD}SuperComfy${C_RESET} in your applications"
+fi
+
 printf '\n'
 ok "SuperComfy is installed — start it with ${C_BOLD}./run.sh${C_RESET}"
