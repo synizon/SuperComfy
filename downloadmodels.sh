@@ -9,16 +9,20 @@ source "$SCRIPT_DIR/supercomfy/lib/common.sh"
 # shellcheck source=supercomfy/lib/models.sh
 source "$SCRIPT_DIR/supercomfy/lib/models.sh"
 
-ALL=0 LORA_TARGET=""
+ALL=0 LORA_TARGET="" GETS=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --all) ALL=1 ;;
     --lora)
       [ $# -ge 2 ] || die "--lora needs a target (HF link, URL, or local .zip/.safetensors)"
       LORA_TARGET="$2"; shift ;;
+    --get)
+      [ $# -ge 2 ] || die "--get needs 'category/Model Name' from supercomfy/models.json"
+      GETS+=("$2"); shift ;;
     -h|--help)
-      echo "Usage: ./downloadmodels.sh [--all] [--lora <target>]"
+      echo "Usage: ./downloadmodels.sh [--all] [--get <category/name>]... [--lora <target>]"
       echo "  --all             download every model in supercomfy/models.json (no menu)"
+      echo "  --get <cat/name>  download one catalog model by category/name (repeatable)"
       echo "  --lora <target>   import a LoRA: HuggingFace link, direct URL,"
       echo "                    or local .zip/.safetensors/.pt/.ckpt file"
       exit 0 ;;
@@ -56,7 +60,18 @@ download_entries() {
 mapfile -t all_entries < <(read_models_file)
 [ ${#all_entries[@]} -gt 0 ] || die "supercomfy/models.json has no models"
 
-if [ "$ALL" -eq 1 ] || [ ! -t 0 ]; then
+if [ ${#GETS[@]} -gt 0 ]; then
+  selected=()
+  for g in "${GETS[@]}"; do
+    case "$g" in */*) ;; *) die "--get wants 'category/Model Name', got: $g" ;; esac
+    want_cat="${g%%/*}" want_name="${g#*/}"
+    entry="$(printf '%s\n' "${all_entries[@]}" \
+      | awk -F'\t' -v c="$want_cat" -v n="$want_name" '$1==c && $2==n' | head -1)"
+    [ -n "$entry" ] || die "Not in supercomfy/models.json: $g"
+    selected+=("$entry")
+  done
+  download_entries "${selected[@]}"
+elif [ "$ALL" -eq 1 ] || [ ! -t 0 ]; then
   download_entries "${all_entries[@]}"
 else
   mapfile -t cats < <(model_categories)
