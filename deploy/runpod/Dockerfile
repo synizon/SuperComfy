@@ -6,8 +6,8 @@
 # update.sh, and the download scripts work unmodified.
 # Built by .github/workflows/runpod-image.yml; template guide in
 # docs/cookbooks/runpod.md.
-ARG BASE_BUILDER=nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04
-ARG BASE_FINAL=nvidia/cuda:13.0.3-base-ubuntu24.04
+ARG BASE_BUILDER=docker.io/nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04
+ARG BASE_FINAL=docker.io/nvidia/cuda:13.0.3-base-ubuntu24.04
 
 FROM ${BASE_BUILDER} AS builder
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -90,8 +90,11 @@ fi
 EOF
 
 # SageAttention 2.2 must be compiled (PyPI's package is a stale 1.x).
+# Each nvcc job peaks near 3GB — cap parallelism or the OOM killer ends the build.
 RUN uv pip install --python "$VENV_PY" setuptools wheel packaging ninja \
-    && MAX_JOBS="$(nproc)" uv pip install --python "$VENV_PY" \
+    && jobs="$(nproc)" \
+    && if [ "$jobs" -gt 8 ]; then jobs=8; fi \
+    && MAX_JOBS="$jobs" uv pip install --python "$VENV_PY" \
         -c "$CONSTRAINTS" --no-build-isolation \
         "git+https://github.com/thu-ml/SageAttention.git@${SAGE_REF}"
 

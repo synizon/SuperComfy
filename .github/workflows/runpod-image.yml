@@ -5,10 +5,10 @@ on:
     inputs:
       base_builder:
         description: Builder base image (needs nvcc for SageAttention)
-        default: nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04
+        default: docker.io/nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04
       base_final:
         description: Final base image
-        default: nvidia/cuda:13.0.3-base-ubuntu24.04
+        default: docker.io/nvidia/cuda:13.0.3-base-ubuntu24.04
       torch_index_url:
         description: PyTorch wheel index (sets the cu lane)
         default: https://download.pytorch.org/whl/cu130
