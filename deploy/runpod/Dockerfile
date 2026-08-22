@@ -90,10 +90,16 @@ fi
 EOF
 
 # SageAttention 2.2 must be compiled (PyPI's package is a stale 1.x).
-# Each nvcc job peaks near 3GB — cap parallelism or the OOM killer ends the build.
+# Its setup.py hardcodes nvcc --threads=8, so each MAX_JOBS job compiles up to
+# 6 arch variants in parallel at ~2.5GB per cicc (~15GB+ per job). Size jobs by
+# available memory or the OOM killer ends the build (16GB CI runners get 1 job).
 RUN uv pip install --python "$VENV_PY" setuptools wheel packaging ninja \
-    && jobs="$(nproc)" \
-    && if [ "$jobs" -gt 8 ]; then jobs=8; fi \
+    && mem_kb="$(grep MemAvailable /proc/meminfo | awk '{print $2}')" \
+    && jobs=$(( mem_kb / 18874368 )) \
+    && if [ "$jobs" -gt "$(nproc)" ]; then jobs="$(nproc)"; fi \
+    && if [ "$jobs" -gt 4 ]; then jobs=4; fi \
+    && if [ "$jobs" -lt 1 ]; then jobs=1; fi \
+    && echo "Compiling SageAttention with MAX_JOBS=$jobs" \
     && MAX_JOBS="$jobs" uv pip install --python "$VENV_PY" \
         -c "$CONSTRAINTS" --no-build-isolation \
         "git+https://github.com/thu-ml/SageAttention.git@${SAGE_REF}"
