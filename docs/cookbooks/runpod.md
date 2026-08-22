@@ -73,8 +73,13 @@ Dashboard at http://127.0.0.1:8080, ComfyUI at http://127.0.0.1:8188
 - **Pod starts but nothing listens** — check the container logs: if
   `COMFY_AUTH is not set` appears, add it to the template (the container idles
   on purpose).
-- **JupyterLab token** — printed in the container logs at start unless
-  `JUPYTER_TOKEN` is set.
+- **JupyterLab token** — the login URL (with token) is printed in the
+  container logs at start; set `JUPYTER_TOKEN` to choose your own.
+- **"403 Access denied" from the console's Connect button (port 8188)** —
+  Cloudflare edge check on console-referred navigation, not a pod error.
+  Open the pod URL in a fresh tab, or use the dashboard's Open ComfyUI
+  button. The proxy itself never returns 403 (unready pods give 502,
+  wrong ports 404).
 - **Slow first pull** — the image is large (torch + CUDA libs). zstd layers
   extract fast; subsequent starts on the same host reuse the cache.
 - **Custom node broke torch** — run `./update.sh` (or restart the pod); the

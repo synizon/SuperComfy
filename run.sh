@@ -174,14 +174,27 @@ if [ "${JUPYTER_ENABLE:-0}" = "1" ] || [ -n "${RUNPOD_POD_ID:-}" ]; then
     JPORT="${JUPYTER_PORT:-8888}"
     if port_free "$JPORT"; then
       token="${JUPYTER_TOKEN:-$("$VENV_PY" -c 'import secrets; print(secrets.token_hex(24))')}"
-      nohup "$VENV_DIR/bin/jupyter" lab --no-browser --allow-root \
-        --ip 0.0.0.0 --port "$JPORT" \
-        --ServerApp.token="$token" \
-        --ServerApp.root_dir=/ \
-        --ServerApp.preferred_dir="$SUPERCOMFY_ROOT" \
-        >"$CACHE_DIR/jupyterlab.log" 2>&1 &
-      JUPYTER_PID=$!
-      ok "JupyterLab on port $JPORT (token: $token)"
+      if [ -z "$token" ]; then
+        warn "JupyterLab token came up empty — not starting JupyterLab without auth"
+      else
+        # --IdentityProvider.token is the canonical flag (--ServerApp.token is
+        # deprecated and ignored when a stale hashed password exists in
+        # ~/.jupyter); password='' clears any such leftover.
+        nohup "$VENV_DIR/bin/jupyter" lab --no-browser --allow-root \
+          --ip 0.0.0.0 --port "$JPORT" \
+          --IdentityProvider.token="$token" \
+          --ServerApp.password='' \
+          --ServerApp.allow_origin='*' \
+          --ServerApp.root_dir=/ \
+          --ServerApp.preferred_dir="$SUPERCOMFY_ROOT" \
+          >"$CACHE_DIR/jupyterlab.log" 2>&1 &
+        JUPYTER_PID=$!
+        if [ -n "${RUNPOD_POD_ID:-}" ]; then
+          ok "JupyterLab: ${C_BOLD}https://${RUNPOD_POD_ID}-${JPORT}.proxy.runpod.net/lab?token=${token}${C_RESET}"
+        else
+          ok "JupyterLab on port $JPORT (token: $token)"
+        fi
+      fi
     else
       warn "Port $JPORT busy — JupyterLab already running?"
     fi
