@@ -96,6 +96,14 @@ uv pip install --python "$VENV_PY" -r "$COMFY_DIR/requirements.txt" \
 write_constraints
 cuda_wheel_gate
 
+step "Installing the dashboard (FastAPI)"
+if uv pip install --python "$VENV_PY" -c "$CONSTRAINTS_FILE" \
+    fastapi uvicorn python-multipart >/dev/null 2>&1; then
+  ok "dashboard dependencies installed"
+else
+  warn "Dashboard install failed — run.sh will start ComfyUI without it"
+fi
+
 step "Installing attention accelerators (optional, best effort)"
 if uv pip install --python "$VENV_PY" -c "$CONSTRAINTS_FILE" comfy-kitchen >/dev/null 2>&1; then
   ok "comfy-kitchen installed"
