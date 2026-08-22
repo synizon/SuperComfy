@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=SuperComfy Install
+Comment=Install or repair SuperComfy (ComfyUI, venv, dependencies)
+Exec=bash -c "cd \\"\\$(dirname \\"\\$1\\")\\" && ./install.sh; read -rp 'Press enter to close...'" _ %k
+Terminal=true
+Icon=system-software-install
+Categories=Graphics;
