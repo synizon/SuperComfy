@@ -1,0 +1,8 @@
+# BuildKit reads this next to the Dockerfile (docker build -f deploy/runpod/Dockerfile .).
+.git
+.env
+cache
+comfy
+docs
+proof
+*.log
