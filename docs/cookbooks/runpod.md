@@ -1,0 +1,81 @@
+# RunPod deployment
+
+Prebuilt image: `ghcr.io/synizon/supercomfy` (also tagged `:cuda-13.0.3` and
+`:YYYYMMDD-<sha>`). Everything is baked — torch cu130, ComfyUI dependencies,
+SageAttention (compiled), comfy-kitchen, flash-attn (when a wheel exists),
+JupyterLab, Caddy. At pod start the entrypoint updates ComfyUI to the latest
+release, then starts the dashboard, password-protected ComfyUI, and
+token-protected JupyterLab.
+
+## Pod template
+
+| Setting | Value |
+| --- | --- |
+| Container image | `ghcr.io/synizon/supercomfy:latest` |
+| Container disk | **400 GB** (venv + ComfyUI + models live here) |
+| Volume | 35 GB, mount path `/persistent` (durability mirror, not model storage) |
+| Expose HTTP ports | `8080` (dashboard), `8188` (ComfyUI), `8888` (JupyterLab) |
+
+Environment variables:
+
+| Variable | Value |
+| --- | --- |
+| `COMFY_AUTH` | **required** — password for ComfyUI + dashboard (user `comfy`). Use a RunPod secret. |
+| `JUPYTER_TOKEN` | optional — JupyterLab token (random + printed in logs if unset). Use a secret. |
+| `SUPERCOMFY_VOLUME_DIR` | `/persistent` (must match the volume mount path) |
+| `HF_TOKEN` | optional — gated/faster HuggingFace downloads |
+| `PRELOAD_NODES` | optional — `1` installs every node in `supercomfy/nodes.txt` at start |
+
+When deploying, filter GPUs with **CUDA Version = 13.0** (the image needs a
+CUDA 13 host driver; RunPod hosts top out at 13.0). The image is private by
+default on GHCR — either make the package public or add registry credentials
+to the template.
+
+Without `COMFY_AUTH` the container refuses to expose ComfyUI and idles so you
+can fix it from the web terminal (`SUPERCOMFY_INSECURE=1` overrides, at your
+own risk).
+
+## What the volume is (and is not)
+
+The container disk is the working copy; the 35 GB volume at `/persistent` is a
+durability mirror that survives pod stop/loss. Mirrored every 60 s and on
+shutdown: `comfy/user` (workflows, settings), `comfy/output`, `comfy/input`,
+`comfy/custom_nodes`, `.env`. On the next pod start these hydrate back.
+
+Models are **not** mirrored — they are hundreds of re-downloadable GB. To also
+mirror LoRAs, set
+`SUPERCOMFY_MIRROR_ITEMS="comfy/user comfy/output comfy/input comfy/custom_nodes .env comfy/models/loras"`.
+
+## Updates
+
+- **ComfyUI and its dependencies**: update themselves at every pod start
+  (entrypoint runs `update.sh`), or run `./update.sh` from a terminal.
+- **torch / SageAttention / the baked stack**: rebuild the image — run the
+  **RunPod image** workflow (Actions → RunPod image → Run workflow) with new
+  versions, then redeploy the pod. There is no in-place upgrade path for the
+  baked venv, by design.
+
+## Local smoke test
+
+```bash
+docker build -f deploy/runpod/Dockerfile -t supercomfy:local .
+docker run --rm --gpus all -e COMFY_AUTH=test -p 8080:8080 -p 8188:8188 supercomfy:local
+```
+
+Dashboard at http://127.0.0.1:8080, ComfyUI at http://127.0.0.1:8188
+(user `comfy`, password `test`).
+
+## Troubleshooting
+
+- **"OCI runtime create failed" / CUDA driver errors at start** — the pod
+  landed on a host with an older driver. Redeploy with the **CUDA Version =
+  13.0** filter set.
+- **Pod starts but nothing listens** — check the container logs: if
+  `COMFY_AUTH is not set` appears, add it to the template (the container idles
+  on purpose).
+- **JupyterLab token** — printed in the container logs at start unless
+  `JUPYTER_TOKEN` is set.
+- **Slow first pull** — the image is large (torch + CUDA libs). zstd layers
+  extract fast; subsequent starts on the same host reuse the cache.
+- **Custom node broke torch** — run `./update.sh` (or restart the pod); the
+  constraints system reinstalls the pinned CUDA build.
