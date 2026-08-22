@@ -99,11 +99,23 @@ if [ "$BIND_HOST" != "127.0.0.1" ] && [ -z "${COMFY_AUTH:-}" ] && [ "${SUPERCOMF
     Set COMFY_AUTH=yourpassword in .env (or SUPERCOMFY_INSECURE=1 to override)."
 fi
 
+# Dashboard (supercomfy/dashboard.py) — served on its own port, same password.
+DASHBOARD_PORT="${DASHBOARD_PORT:-8080}"
+DASH_ON=1
+if ! py_has fastapi; then
+  warn "Dashboard needs fastapi — run ./install.sh to add it"
+  DASH_ON=0
+elif ! port_free "$DASHBOARD_PORT"; then
+  warn "Port $DASHBOARD_PORT is already in use — dashboard not started"
+  DASH_ON=0
+fi
+
 # --- Caddy basic-auth front (only when a password is set) --------------------
-CADDY_PID="" JUPYTER_PID=""
+CADDY_PID="" JUPYTER_PID="" DASHBOARD_PID=""
 cleanup() {
   [ -n "$CADDY_PID" ] && kill "$CADDY_PID" 2>/dev/null
   [ -n "$JUPYTER_PID" ] && kill "$JUPYTER_PID" 2>/dev/null
+  [ -n "$DASHBOARD_PID" ] && kill "$DASHBOARD_PID" 2>/dev/null
   return 0
 }
 trap cleanup EXIT INT TERM
@@ -136,12 +148,34 @@ http://:$PUBLIC_PORT {
 	reverse_proxy 127.0.0.1:$INTERNAL_PORT
 }
 EOF
+  if [ "$DASH_ON" -eq 1 ]; then
+    DASH_HOST="127.0.0.1"
+    DASH_BIND_PORT="$(pick_port 18080)" || die "No free internal port near 18080"
+    cat >> "$CACHE_DIR/Caddyfile" <<EOF
+http://:$DASHBOARD_PORT {
+	basic_auth {
+		comfy $hash_pw
+	}
+	reverse_proxy 127.0.0.1:$DASH_BIND_PORT
+}
+EOF
+  fi
   "$CADDY_BIN" run --config "$CACHE_DIR/Caddyfile" --adapter caddyfile \
     >"$CACHE_DIR/caddy.log" 2>&1 &
   CADDY_PID=$!
   ok "Password protection on port $PUBLIC_PORT (user: comfy)"
 else
   COMFY_BIND="$BIND_HOST" COMFY_LISTEN_PORT="$PUBLIC_PORT"
+  DASH_HOST="$BIND_HOST" DASH_BIND_PORT="$DASHBOARD_PORT"
+fi
+
+# --- dashboard ---------------------------------------------------------------
+if [ "$DASH_ON" -eq 1 ]; then
+  COMFY_PORT="$PUBLIC_PORT" COMFY_LISTEN_PORT="$COMFY_LISTEN_PORT" \
+    "$VENV_PY" "$SCRIPT_DIR/supercomfy/dashboard.py" \
+    --host "$DASH_HOST" --port "$DASH_BIND_PORT" \
+    >"$CACHE_DIR/dashboard.log" 2>&1 &
+  DASHBOARD_PID=$!
 fi
 
 # --- JupyterLab (optional) ---------------------------------------------------
@@ -170,9 +204,11 @@ fi
 printf '\n'
 step "ComfyUI is starting"
 if [ -n "${RUNPOD_POD_ID:-}" ]; then
-  ok "Open: ${C_BOLD}https://${RUNPOD_POD_ID}-${PUBLIC_PORT}.proxy.runpod.net${C_RESET}"
+  [ "$DASH_ON" -eq 1 ] && ok "Dashboard: ${C_BOLD}https://${RUNPOD_POD_ID}-${DASHBOARD_PORT}.proxy.runpod.net${C_RESET}"
+  ok "ComfyUI:   ${C_BOLD}https://${RUNPOD_POD_ID}-${PUBLIC_PORT}.proxy.runpod.net${C_RESET}"
 else
-  ok "Open: ${C_BOLD}http://127.0.0.1:${PUBLIC_PORT}${C_RESET}"
+  [ "$DASH_ON" -eq 1 ] && ok "Dashboard: ${C_BOLD}http://127.0.0.1:${DASHBOARD_PORT}${C_RESET}"
+  ok "ComfyUI:   ${C_BOLD}http://127.0.0.1:${PUBLIC_PORT}${C_RESET}"
 fi
 [ -n "${COMFY_AUTH:-}" ] && ok "Login: user ${C_BOLD}comfy${C_RESET}, your COMFY_AUTH password"
 printf '\n'

@@ -228,6 +228,7 @@ def index():
 if __name__ == "__main__":
     import uvicorn
     parser = argparse.ArgumentParser()
+    parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=int(os.environ.get("DASHBOARD_BIND_PORT", "8081")))
     args = parser.parse_args()
-    uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="warning")
+    uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
