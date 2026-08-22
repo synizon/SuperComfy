@@ -28,6 +28,16 @@ if [ -f "$VENV_DIR/.installed" ] && [ "$(cat "$VENV_DIR/.installed")" != "$(requ
 fi
 cuda_wheel_gate
 
+# --- first launch: offer nodes + models (asked once, remembered in .env) -----
+if [ -z "${COMFY_SETUP_OFFERED:-}" ] && [ -t 0 ]; then
+  step "First launch"
+  read -rp "  Download the default custom nodes now? [y/N]: " a
+  case "${a:-n}" in y|Y) "$SCRIPT_DIR/downloadnodes.sh" --all || warn "Some nodes failed — re-run ./downloadnodes.sh later" ;; esac
+  read -rp "  Open the model downloader? [y/N]: " a
+  case "${a:-n}" in y|Y) "$SCRIPT_DIR/downloadmodels.sh" || warn "Some downloads failed — re-run ./downloadmodels.sh later" ;; esac
+  save_env COMFY_SETUP_OFFERED 1
+fi
+
 # --- attention / speed selector ---------------------------------------------
 py_has() { "$VENV_PY" -c "import $1" >/dev/null 2>&1; }
 

@@ -76,6 +76,24 @@ pick_port() { # pick_port BASE — echoes first free port in [BASE, BASE+20]
   return 1
 }
 
+# parse_selection MAX "PICKS" — expand menu picks like "1 3 5-7" into one
+# 1-based index per line. Dies (from its subshell) on bad input; callers under
+# set -e capture with idxs="$(parse_selection ...)" so the failure propagates.
+parse_selection() {
+  local max="$1" picks="$2" tok start end n
+  for tok in $picks; do
+    case "$tok" in
+      *-*) start="${tok%-*}" end="${tok#*-}" ;;
+      *)   start="$tok" end="$tok" ;;
+    esac
+    [[ "$start" =~ ^[0-9]+$ && "$end" =~ ^[0-9]+$ ]] || die "Bad selection: $tok"
+    for ((n=start; n<=end; n++)); do
+      [ "$n" -ge 1 ] && [ "$n" -le "$max" ] || die "Out of range: $n"
+      printf '%s\n' "$n"
+    done
+  done
+}
+
 ensure_uv() {
   if ! command -v uv >/dev/null 2>&1; then
     step "Installing uv (Python package manager)"

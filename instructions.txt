@@ -30,7 +30,18 @@ SUPERCOMFY — QUICK INSTRUCTIONS
    Enable in .env: JUPYTER_ENABLE=1  (on RunPod it is on automatically)
    The access token is JUPYTER_TOKEN from .env, or printed at start.
 
-6. SETTINGS
+6. CUSTOM NODES
+   ./downloadnodes.sh          Pick popular nodes from a menu.
+   ./downloadnodes.sh --all    Install the whole list (supercomfy/nodes.txt).
+   Node dependencies are installed under pins so they can never break torch.
+
+7. MODELS + LORAS
+   ./downloadmodels.sh                Category menu (supercomfy/models.json).
+   ./downloadmodels.sh --lora LINK    Import a LoRA from a HuggingFace link,
+                                      a direct URL, or a local .zip/.safetensors.
+   Set HF_TOKEN in .env for gated HuggingFace models.
+
+8. SETTINGS
    All settings live in .env (created from .env.example). Ports, password,
    attention preset, extra ComfyUI flags — each variable is documented there.
 
