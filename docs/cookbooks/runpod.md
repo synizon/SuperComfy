@@ -2,9 +2,10 @@
 
 Prebuilt image: `ghcr.io/synizon/supercomfy` (also tagged `:cuda-13.0.3` and
 `:YYYYMMDD-<sha>`). Everything is baked — torch cu130, ComfyUI dependencies,
-comfy-kitchen, JupyterLab, Caddy. At pod start the entrypoint updates ComfyUI to the latest
-release, then starts the dashboard, password-protected ComfyUI, and
-token-protected JupyterLab.
+comfy-kitchen, JupyterLab, Caddy. At pod start the dashboard, password-protected
+ComfyUI port, and token-protected JupyterLab come up within seconds; the ComfyUI
+update and optional node preload (`deploy/runpod/prestart.sh`) run behind them,
+and ComfyUI itself starts when they finish.
 
 ## Pod template
 
@@ -49,7 +50,7 @@ mirror LoRAs, set
 ## Updates
 
 - **ComfyUI and its dependencies**: update themselves at every pod start
-  (entrypoint runs `update.sh`), or run `./update.sh` from a terminal.
+  (the prestart hook runs `update.sh`), or run `./update.sh` from a terminal.
 - **torch / comfy-kitchen / the baked stack**: rebuild the image — run the
   **RunPod image** workflow (Actions → RunPod image → Run workflow) with new
   versions, then redeploy the pod. There is no in-place upgrade path for the

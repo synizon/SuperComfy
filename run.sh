@@ -203,6 +203,13 @@ if [ "${JUPYTER_ENABLE:-0}" = "1" ] || [ -n "${RUNPOD_POD_ID:-}" ]; then
   fi
 fi
 
+# --- prestart hook -----------------------------------------------------------
+# RunPod runs update.sh + node preload here, with the services above already
+# serving, so the pod's ports are not dead during the slow bootstrap.
+if [ -n "${COMFY_PRESTART:-}" ] && [ -x "$COMFY_PRESTART" ]; then
+  "$COMFY_PRESTART" || warn "Prestart failed — continuing with the current install"
+fi
+
 # --- launch ------------------------------------------------------------------
 printf '\n'
 step "ComfyUI is starting"
