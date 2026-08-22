@@ -27,6 +27,9 @@ that would be installed, without changing anything.
 ./run.sh
 ```
 
+Or skip the terminal: the installer adds a **SuperComfy** entry to your app
+menu (desktop machines only) that runs run.sh in a terminal window.
+
 First run asks for a speed/quality preset (saved to `.env`, change later with
 `./run.sh --select`):
 
