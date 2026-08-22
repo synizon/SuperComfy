@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# SuperComfy RunPod entrypoint: hydrate durable state from the volume, move
-# ComfyUI to the latest release, then hand off to run.sh (dashboard + Caddy
-# auth + JupyterLab). Stays PID 1 so it can flush the volume mirror on exit.
+# SuperComfy RunPod entrypoint: hydrate durable state from the volume, then
+# hand off to run.sh (dashboard + Caddy auth + JupyterLab first, then the
+# update/preload prestart hook, then ComfyUI). Stays PID 1 so it can flush
+# the volume mirror on exit.
 set -euo pipefail
 
 ROOT=/opt/supercomfy
@@ -29,15 +30,13 @@ else
   echo "No volume at $VOLUME_DIR — outputs live on the container disk only."
 fi
 
-./update.sh || warn "Update failed — running the ComfyUI release baked into the image."
-
-if [ "${PRELOAD_NODES:-0}" = "1" ]; then
-  ./downloadnodes.sh --all || warn "Some custom nodes failed — re-run ./downloadnodes.sh from a terminal."
-fi
-
 # Image defaults: comfy-kitchen preset (baked in), JupyterLab on.
 export COMFY_ATTENTION="${COMFY_ATTENTION:-comfy-kitchen}"
 export JUPYTER_ENABLE="${JUPYTER_ENABLE:-1}"
+
+# run.sh runs the slow update + node preload through this hook after the
+# dashboard/JupyterLab/Caddy are up, so the ports are live within seconds.
+export COMFY_PRESTART="$ROOT/deploy/runpod/prestart.sh"
 
 if [ -z "${COMFY_AUTH:-}" ] && [ "${SUPERCOMFY_INSECURE:-0}" != "1" ]; then
   warn "COMFY_AUTH is not set — refusing to expose ComfyUI without a password."
