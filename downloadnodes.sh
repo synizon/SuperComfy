@@ -50,17 +50,8 @@ else
     q|Q) exit 0 ;;
     a|A|'') selected=("${entries[@]}") ;;
     *)
-      for tok in $pick; do
-        case "$tok" in
-          *-*) start="${tok%-*}"; end="${tok#*-}" ;;
-          *)   start="$tok"; end="$tok" ;;
-        esac
-        [[ "$start" =~ ^[0-9]+$ && "$end" =~ ^[0-9]+$ ]] || die "Bad selection: $tok"
-        for ((n=start; n<=end; n++)); do
-          [ "$n" -ge 1 ] && [ "$n" -le ${#entries[@]} ] || die "Out of range: $n"
-          selected+=("${entries[$((n-1))]}")
-        done
-      done ;;
+      idxs="$(parse_selection "${#entries[@]}" "$pick")"
+      for n in $idxs; do selected+=("${entries[$((n-1))]}"); done ;;
   esac
 fi
 
