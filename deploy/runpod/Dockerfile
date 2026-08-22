@@ -20,9 +20,11 @@ ARG COMFYUI_REF=v0.33.3
 # woct0rdho's fork of thu-ml/SageAttention: upstream passes every -gencode to
 # every extension, so a multi-arch list mixing Hopper (9.0) and Blackwell (12.0)
 # fails (wgmma PTX can't target sm_120). The fork scopes arch flags per
-# extension; it still builds and reports sageattention 2.2.0.
+# extension; it still builds and reports sageattention 2.2.0. Pinned to a main
+# commit — the release tags use torch's stable ABI, which torch 2.13 rejects
+# (aoti_torch_get_current_cuda_stream undefined); main uses the classic API.
 ARG SAGE_REPO=https://github.com/woct0rdho/SageAttention.git
-ARG SAGE_REF=v2.2.0-windows.post6
+ARG SAGE_REF=890b4ccacb39cf1693e6d96336db61d6c511a2dd
 # Every arch SageAttention 2.2 supports on CUDA 13 hosts (Ampere..Blackwell).
 ARG TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0;12.0"
 
