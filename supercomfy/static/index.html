@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SuperComfy</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%23121820'/><text x='2' y='12' font-family='monospace' font-size='11' fill='%2338c6ea'>&gt;_</text></svg>">
+<style>
+  :root {
+    --bg: #121820;        /* tinted near-black, hue ~215 */
+    --surface: #192129;
+    --line: #263039;
+    --ink: #e4eaef;
+    --dim: #8a97a3;
+    --accent: #38c6ea;    /* the CLI's cyan */
+    --accent-ink: #0b1418;
+    --good: #4cc38a;      /* the CLI's ✔ green */
+    --bad: #e5646e;
+    --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  * { margin: 0; box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 400 16px/1.5 system-ui, sans-serif;
+    padding: 24px; min-height: 100vh;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  @media (min-width: 1920px) { body { zoom: 1.2; } }
+
+  /* top bar */
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .wordmark { font: 700 20px/1 var(--mono); letter-spacing: -0.03em; }
+  .wordmark span { color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px 20px; font: 400 13px/1.4 var(--mono); color: var(--dim); font-variant-numeric: tabular-nums; }
+  .chips b { color: var(--ink); font-weight: 600; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); margin-right: 6px; vertical-align: 1px; }
+  .dot.up { background: var(--good); }
+  header .actions { margin-left: auto; display: flex; gap: 8px; }
+
+  /* buttons */
+  button, .btn {
+    font: 600 14px/1 inherit; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 8px; padding: 13px 18px;
+    min-height: 44px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+    transition: border-color 120ms, background 120ms, transform 100ms;
+  }
+  button:hover, .btn:hover { border-color: var(--dim); }
+  button:active, .btn:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.45; cursor: default; transform: none; }
+  .primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .primary:hover { border-color: var(--accent); filter: brightness(1.08); }
+  :is(button, .btn, input, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* cards */
+  main { display: grid; grid-template-columns: 5fr 7fr; gap: 24px; padding-top: 24px; align-items: start; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .col { display: grid; gap: 24px; }
+  section { background: var(--surface); border-radius: 8px; padding: 20px; }
+  h2 { font: 600 15px/1 var(--mono); letter-spacing: -0.02em; margin-bottom: 14px; }
+  h2::before { content: "==> "; color: var(--accent); font-weight: 700; }
+
+  /* nodes */
+  .rows { font: 400 14px/1 var(--mono); }
+  .rows li { list-style: none; display: flex; align-items: center; gap: 10px; padding: 8px 2px; border-top: 1px solid var(--line); }
+  .rows .mark { width: 1em; text-align: center; color: var(--dim); }
+  .rows .mark.on { color: var(--good); }
+  .rows .size { margin-left: auto; color: var(--dim); font-size: 12px; }
+  .cardfoot { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+  .cardfoot .note { font: 400 13px/1.4 inherit; color: var(--dim); }
+
+  /* models accordion */
+  details { border-top: 1px solid var(--line); }
+  summary { font: 600 14px/1 var(--mono); padding: 12px 2px; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+  summary::before { content: "+"; color: var(--dim); width: 1em; }
+  details[open] summary::before { content: "−"; }
+  summary .count { margin-left: auto; color: var(--dim); font-weight: 400; font-size: 12px; }
+  .rows label { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px 2px; border-top: 1px solid var(--line); }
+  input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); }
+
+  /* lora */
+  .drop {
+    border: 1px dashed var(--line); border-radius: 8px; padding: 24px; text-align: center;
+    color: var(--dim); font-size: 14px; cursor: pointer; transition: border-color 120ms, background 120ms;
+  }
+  .drop.hot, .drop:hover { border-color: var(--accent); color: var(--ink); }
+  .linkrow { display: flex; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .linkrow input {
+    flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    color: var(--ink); font: 400 13px/1 var(--mono); padding: 0 12px; min-height: 44px;
+  }
+  .bar { height: 4px; background: var(--line); border-radius: 2px; margin-top: 12px; overflow: hidden; display: none; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 150ms; }
+
+  /* job log — the terminal, verbatim */
+  #job { grid-column: 1 / -1; display: none; }
+  #job.show { display: block; animation: rise 200ms var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  #job .head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font: 600 14px/1 var(--mono); }
+  #job .state { color: var(--dim); font-weight: 400; font-size: 13px; }
+  #job .state.ok { color: var(--good); } #job .state.err { color: var(--bad); }
+  #log {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
+    font: 400 12.5px/1.55 var(--mono); color: var(--dim); white-space: pre-wrap; word-break: break-word;
+    height: 260px; overflow-y: auto;
+  }
+  .flash { color: var(--bad); font: 400 13px/1.4 inherit; margin-top: 10px; min-height: 1.2em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="wordmark">SUPER<span>COMFY</span></div>
+    <div class="chips" id="chips">
+      <span><span class="dot" id="dot"></span><b id="comfyState">connecting…</b></span>
+    </div>
+    <div class="actions">
+      <a class="btn" id="openJupyter" target="_blank" hidden>JupyterLab</a>
+      <a class="btn primary" id="openComfy" target="_blank">Open ComfyUI</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="col">
+      <section id="nodesCard">
+        <h2>Custom nodes</h2>
+        <ul class="rows" id="nodeList"></ul>
+        <div class="cardfoot">
+          <button id="installAll">Install all</button>
+          <span class="note" id="nodeNote"></span>
+        </div>
+      </section>
+
+      <section>
+        <h2>LoRAs</h2>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Upload a LoRA file">
+          Drop a .safetensors / .zip here, or click to choose
+          <input type="file" id="file" accept=".safetensors,.pt,.ckpt,.zip" hidden>
+        </div>
+        <div class="bar" id="upBar"><i></i></div>
+        <div class="linkrow">
+          <input id="loraUrl" placeholder="https://huggingface.co/… link or direct URL" spellcheck="false">
+          <button id="loraGo">Import</button>
+        </div>
+        <div class="flash" id="loraFlash"></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section>
+        <h2>Models</h2>
+        <div id="cats"><span class="note" style="color:var(--dim);font-size:14px">Loading catalog…</span></div>
+        <div class="cardfoot">
+          <button class="primary" id="dlBtn" disabled>Download selected</button>
+          <span class="note">Catalog: supercomfy/models.json — edit it to add your own.</span>
+        </div>
+        <div class="flash" id="modelFlash"></div>
+      </section>
+    </div>
+
+    <section id="job">
+      <div class="head"><span id="jobTitle"></span><span class="state" id="jobState"></span></div>
+      <div id="log"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const api = (path, opts) => fetch(path, opts).then(async r => {
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.detail || r.statusText);
+  return d;
+});
+
+/* ---- status header ---- */
+let comfyPort = 8188;
+async function refreshStatus() {
+  try {
+    const s = await api('/api/status');
+    comfyPort = s.comfy_port;
+    $('dot').className = 'dot' + (s.comfy_up ? ' up' : '');
+    $('comfyState').textContent = s.comfy_up ? ('ComfyUI ' + (s.comfy_version || 'up')) : 'ComfyUI starting…';
+    const chips = [];
+    if (s.gpu) chips.push(`${s.gpu.name}`, `VRAM <b>${(s.gpu.vram_used_mb/1024).toFixed(1)}</b>/<b>${(s.gpu.vram_total_mb/1024).toFixed(0)}</b> GB`);
+    chips.push(`disk free <b>${s.disk_free_gb}</b> GB`);
+    document.querySelectorAll('#chips .extra').forEach(e => e.remove());
+    for (const c of chips) {
+      const el = document.createElement('span');
+      el.className = 'extra'; el.innerHTML = c;
+      $('chips').append(el);
+    }
+    $('openComfy').href = s.comfy_url || `http://${location.hostname}:${s.comfy_port}`;
+    if (s.jupyter_port) {
+      $('openJupyter').hidden = false;
+      $('openJupyter').href = s.jupyter_url || `http://${location.hostname}:${s.jupyter_port}`;
+    }
+    if (s.job && !polling) watchJob(s.job.id, s.job.title);   // reattach after reload
+  } catch { $('comfyState').textContent = 'dashboard unreachable'; }
+}
+
+/* ---- nodes ---- */
+async function refreshNodes() {
+  const d = await api('/api/nodes');
+  const ul = $('nodeList'); ul.replaceChildren();
+  let on = 0;
+  for (const n of d.nodes) {
+    if (n.installed) on++;
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="mark ${n.installed ? 'on' : ''}">${n.installed ? '✔' : '○'}</span>`;
+    li.append(n.name);
+    ul.append(li);
+  }
+  $('nodeNote').textContent = d.nodes.length ? `${on} of ${d.nodes.length} installed` : 'supercomfy/nodes.txt is empty';
+  $('installAll').disabled = !d.nodes.length || on === d.nodes.length;
+  if (on === d.nodes.length && d.nodes.length) $('installAll').textContent = 'All installed';
+}
+$('installAll').onclick = () => startJob(api('/api/nodes/install-all', {method: 'POST'}), 'Installing custom nodes', $('nodeNote'));
+
+/* ---- models ---- */
+const picked = new Set();
+async function refreshModels() {
+  const d = await api('/api/models');
+  const root = $('cats'); root.replaceChildren();
+  let any = false;
+  for (const [cat, items] of Object.entries(d.categories)) {
+    if (!items.length) continue;
+    any = true;
+    const have = items.filter(i => i.present).length;
+    const det = document.createElement('details');
+    if (have < items.length && !root.children.length) det.open = true;
+    det.innerHTML = `<summary>${cat}<span class="count">${have}/${items.length} downloaded</span></summary>`;
+    const ul = document.createElement('ul'); ul.className = 'rows';
+    for (const m of items) {
+      const key = `${cat}/${m.name}`;
+      const li = document.createElement('li'); li.style.cssText = 'padding:0;border:0';
+      const lab = document.createElement('label');
+      const cb = Object.assign(document.createElement('input'), {type: 'checkbox', checked: picked.has(key), disabled: m.present});
+      cb.onchange = () => { cb.checked ? picked.add(key) : picked.delete(key); syncDl(); };
+      lab.append(cb, Object.assign(document.createElement('span'), {className: 'mark' + (m.present ? ' on' : ''), textContent: m.present ? '✔' : ' '}), m.name,
+                 Object.assign(document.createElement('span'), {className: 'size', textContent: m.size || ''}));
+      li.append(lab); ul.append(li);
+    }
+    det.append(ul); root.append(det);
+  }
+  if (!any) root.innerHTML = '<span style="color:var(--dim);font-size:14px">Catalog is empty — add models to supercomfy/models.json.</span>';
+  syncDl();
+}
+function syncDl() {
+  $('dlBtn').disabled = !picked.size;
+  $('dlBtn').textContent = picked.size ? `Download selected (${picked.size})` : 'Download selected';
+}
+$('dlBtn').onclick = () => {
+  const items = [...picked];
+  startJob(api('/api/models/download', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({items})}),
+           'Downloading models', $('modelFlash')).then(okd => { if (okd) picked.clear(); });
+};
+
+/* ---- LoRAs ---- */
+const drop = $('drop');
+drop.onclick = () => $('file').click();
+drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('file').click(); } };
+['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('hot'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('hot'); }));
+drop.addEventListener('drop', e => { if (e.dataTransfer.files[0]) uploadLora(e.dataTransfer.files[0]); });
+$('file').onchange = () => { if ($('file').files[0]) uploadLora($('file').files[0]); };
+
+function uploadLora(f) {
+  $('loraFlash').textContent = '';
+  const bar = $('upBar'); bar.style.display = 'block';
+  const xhr = new XMLHttpRequest();          // XHR: fetch has no upload progress
+  xhr.open('POST', '/api/lora/upload');
+  xhr.upload.onprogress = e => { if (e.lengthComputable) bar.firstElementChild.style.width = (100 * e.loaded / e.total) + '%'; };
+  xhr.onload = () => {
+    bar.style.display = 'none'; bar.firstElementChild.style.width = 0;
+    let d = {}; try { d = JSON.parse(xhr.responseText); } catch {}
+    if (xhr.status >= 400) { $('loraFlash').textContent = d.detail || `Upload failed (${xhr.status})`; return; }
+    if (d.job) watchJob(d.job, 'Extracting LoRA zip');
+    else $('loraFlash').textContent = `Saved to ${d.saved}`, $('loraFlash').style.color = 'var(--good)';
+  };
+  xhr.onerror = () => { bar.style.display = 'none'; $('loraFlash').textContent = 'Upload failed — network error'; };
+  const fd = new FormData(); fd.append('file', f); xhr.send(fd);
+}
+$('loraGo').onclick = () => {
+  const url = $('loraUrl').value.trim();
+  if (!url) return;
+  startJob(api('/api/lora/link', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({url})}),
+           'Importing LoRA', $('loraFlash')).then(okd => { if (okd) $('loraUrl').value = ''; });
+};
+$('loraUrl').onkeydown = e => { if (e.key === 'Enter') $('loraGo').click(); };
+
+/* ---- job runner ---- */
+let polling = false;
+async function startJob(promise, title, flashEl) {
+  flashEl.textContent = ''; flashEl.style.color = '';
+  try {
+    const d = await promise;
+    if (d.job) watchJob(d.job, title);
+    return true;
+  } catch (e) { flashEl.textContent = e.message; return false; }
+}
+function watchJob(id, title) {
+  polling = true;
+  $('job').classList.add('show');
+  $('job').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  $('jobTitle').textContent = title;
+  $('jobState').textContent = 'running…'; $('jobState').className = 'state';
+  $('log').textContent = '';
+  let offset = 0;
+  (async function tick() {
+    try {
+      const d = await api(`/api/jobs/${id}?offset=${offset}`);
+      if (d.log) {
+        $('log').textContent += d.log; offset = d.offset;
+        $('log').scrollTop = $('log').scrollHeight;
+      }
+      $('jobTitle').textContent = d.title || title;
+      if (d.running) return setTimeout(tick, 1500);
+      $('jobState').textContent = d.exit_code === 0 ? '✔ done' : `✘ failed (exit ${d.exit_code}) — see log above`;
+      $('jobState').className = 'state ' + (d.exit_code === 0 ? 'ok' : 'err');
+    } catch (e) {
+      $('jobState').textContent = '✘ ' + e.message; $('jobState').className = 'state err';
+    }
+    polling = false;
+    refreshNodes(); refreshModels(); refreshStatus();
+  })();
+}
+
+/* ---- boot ---- */
+refreshStatus(); refreshNodes(); refreshModels();
+setInterval(refreshStatus, 5000);
+</script>
+</body>
+</html>

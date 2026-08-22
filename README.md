@@ -39,6 +39,15 @@ First run asks for a speed/quality preset (saved to `.env`, change later with
 
 Then open http://127.0.0.1:8188 (or the printed RunPod proxy URL).
 
+## Dashboard
+
+run.sh also serves a web dashboard on port 8080 (URL printed at start): open
+ComfyUI or JupyterLab, install the custom nodes, download catalog models, and
+import LoRAs by drag-and-drop, HuggingFace link, or zip — all from the browser.
+It runs the same shell scripts as the CLI, showing their live log. With
+`COMFY_AUTH` set it sits behind the same password as ComfyUI; without it, it
+stays on 127.0.0.1. Change the port with `DASHBOARD_PORT` in `.env`.
+
 ## Update
 
 ```bash
@@ -48,8 +57,8 @@ Then open http://127.0.0.1:8188 (or the printed RunPod proxy URL).
 
 ## Password protection
 
-Set `COMFY_AUTH=yourpassword` in `.env`. run.sh then fronts ComfyUI with a
-Caddy basic-auth proxy (user `comfy`). Exposing to the network without a
+Set `COMFY_AUTH=yourpassword` in `.env`. run.sh then fronts ComfyUI and the
+dashboard with a Caddy basic-auth proxy (user `comfy`). Exposing to the network without a
 password is refused. JupyterLab (optional, `JUPYTER_ENABLE=1`) is protected by
 `JUPYTER_TOKEN`, or a random token that is printed at start.
 

@@ -15,6 +15,10 @@ SUPERCOMFY — QUICK INSTRUCTIONS
    Change the preset later: ./run.sh --select
    Stop with Ctrl+C.
 
+   run.sh also serves a web DASHBOARD on port 8080 (URL printed at start):
+   open ComfyUI/JupyterLab, install nodes, download models, and import LoRAs
+   (drag-and-drop, link, or zip) from the browser. Same password as ComfyUI.
+
 3. UPDATE
    ./update.sh
    Moves ComfyUI to the newest release and refreshes its dependencies
