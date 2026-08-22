@@ -108,5 +108,14 @@ skipped. Set `HF_TOKEN` in `.env` for gated/faster HuggingFace downloads.
 
 ## RunPod
 
-A prebuilt Docker image and pod template guide ship in a later release; the
-scripts already detect RunPod (proxy URLs, 0.0.0.0 bind, JupyterLab on).
+Deploy the prebuilt image `ghcr.io/synizon/supercomfy` — everything is baked
+(torch cu130, SageAttention compiled, JupyterLab, Caddy) and ComfyUI updates
+itself to the latest release at every pod start. Template: 400 GB container
+disk, a 35 GB volume at `/persistent` (mirrors workflows/outputs/`.env` for
+durability), HTTP ports 8080/8188/8888, env `COMFY_AUTH` (required) +
+`JUPYTER_TOKEN`, and the **CUDA Version = 13.0** GPU filter. Full checklist,
+update paths, and troubleshooting: [docs/cookbooks/runpod.md](docs/cookbooks/runpod.md).
+
+The image is built by the **RunPod image** GitHub Action
+(`.github/workflows/runpod-image.yml`, manual dispatch). The scripts also
+detect RunPod when run directly (proxy URLs, 0.0.0.0 bind, JupyterLab on).

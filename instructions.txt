@@ -49,6 +49,13 @@ SUPERCOMFY — QUICK INSTRUCTIONS
    All settings live in .env (created from .env.example). Ports, password,
    attention preset, extra ComfyUI flags — each variable is documented there.
 
+9. RUNPOD
+   Deploy the prebuilt image ghcr.io/synizon/supercomfy — no install step,
+   ComfyUI self-updates at pod start. Template: 400GB container disk, 35GB
+   volume at /persistent, HTTP ports 8080/8188/8888, env COMFY_AUTH (required)
+   + JUPYTER_TOKEN, GPU filter "CUDA Version = 13.0".
+   Full guide: docs/cookbooks/runpod.md
+
 PROBLEMS?
 - "not a CUDA build" -> re-run ./install.sh (a custom node replaced torch).
 - "No NVIDIA CUDA detected" -> install/upgrade the NVIDIA driver (580+).
