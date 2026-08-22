@@ -27,9 +27,10 @@ Environment variables:
 | `PRELOAD_NODES` | optional — `1` installs every node in `supercomfy/nodes.txt` at start |
 
 When deploying, filter GPUs with **CUDA Version = 13.0** (the image needs a
-CUDA 13 host driver; RunPod hosts top out at 13.0). The image is private by
-default on GHCR — either make the package public or add registry credentials
-to the template.
+CUDA 13 host driver; RunPod hosts top out at 13.0). The GHCR package is
+public, so no registry credential is needed. (GHCR creates a package private
+on its first push — after the first workflow run, flip it once at
+Package settings → Danger Zone → Change visibility.)
 
 Without `COMFY_AUTH` the container refuses to expose ComfyUI and idles so you
 can fix it from the web terminal (`SUPERCOMFY_INSECURE=1` overrides, at your
