@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SuperComfy installer: Python 3.13 venv (uv), CUDA-routed torch, latest ComfyUI
-# release, dependency constraints, and optional attention accelerators.
+# release, dependency constraints, and the optional comfy-kitchen accelerator.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -104,53 +104,11 @@ else
   warn "Dashboard install failed — run.sh will start ComfyUI without it"
 fi
 
-step "Installing attention accelerators (optional, best effort)"
+step "Installing comfy-kitchen (optional, best effort)"
 if uv pip install --python "$VENV_PY" -c "$CONSTRAINTS_FILE" comfy-kitchen >/dev/null 2>&1; then
   ok "comfy-kitchen installed"
 else
   warn "comfy-kitchen install failed — the comfy-kitchen selector option will be unavailable"
-fi
-
-# flash-attn: no official cu13 wheels; use mjun0812's prebuilt index if one
-# matches this exact cu-tag + torch minor + python version.
-flash_wheel="$("$VENV_PY" - "$CU_TAG" "$TORCH_PIN" <<'PYEOF' 2>/dev/null || true
-import json, sys, urllib.request
-cu, torch_pin = sys.argv[1], sys.argv[2]
-torch_minor = ".".join(torch_pin.split(".")[:2])
-cp = f"cp{sys.version_info.major}{sys.version_info.minor}"
-req = urllib.request.Request(
-    "https://api.github.com/repos/mjun0812/flash-attention-prebuild-wheels/releases?per_page=10",
-    headers={"User-Agent": "supercomfy"})
-for rel in json.load(urllib.request.urlopen(req, timeout=20)):
-    for a in rel.get("assets", []):
-        n = a["name"]
-        if cu in n and f"torch{torch_minor}" in n and cp in n and "linux_x86_64" in n:
-            print(a["browser_download_url"]); sys.exit()
-PYEOF
-)"
-if [ -n "$flash_wheel" ]; then
-  if uv pip install --python "$VENV_PY" -c "$CONSTRAINTS_FILE" "$flash_wheel" >/dev/null 2>&1; then
-    ok "flash-attn installed ($(basename "$flash_wheel"))"
-  else
-    warn "flash-attn wheel failed to install — flash selector option will be unavailable"
-  fi
-else
-  warn "No prebuilt flash-attn wheel for $CU_TAG/torch $TORCH_PIN — skipping (not required)"
-fi
-
-# SageAttention 2.2.0 must be compiled (PyPI's package is a stale 1.x). Needs nvcc.
-if [ "${SUPERCOMFY_SAGE:-1}" = "1" ] && command -v nvcc >/dev/null 2>&1; then
-  step "Building SageAttention 2.2.0 from source (this takes a few minutes)"
-  arch="$("$VENV_PY" -c 'import torch; c=torch.cuda.get_device_capability(); print(f"{c[0]}.{c[1]}")' 2>/dev/null || true)"
-  if [ -n "$arch" ] && TORCH_CUDA_ARCH_LIST="$arch" uv pip install --python "$VENV_PY" \
-      -c "$CONSTRAINTS_FILE" --no-build-isolation \
-      "git+https://github.com/thu-ml/SageAttention.git@v2.2.0"; then
-    ok "SageAttention built for sm_${arch/./}"
-  else
-    warn "SageAttention build failed — sage selector option will be unavailable"
-  fi
-else
-  warn "Skipping SageAttention (needs nvcc; set SUPERCOMFY_SAGE=1 and install cuda-toolkit to build it)"
 fi
 
 if [ "${SUPERCOMFY_JUPYTER:-0}" = "1" ]; then

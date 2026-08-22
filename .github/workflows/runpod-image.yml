@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       base_builder:
-        description: Builder base image (needs nvcc for SageAttention)
-        default: docker.io/nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04
+        description: Builder base image (wheels only, no compiler needed)
+        default: docker.io/nvidia/cuda:13.0.3-base-ubuntu24.04
       base_final:
         description: Final base image
         default: docker.io/nvidia/cuda:13.0.3-base-ubuntu24.04

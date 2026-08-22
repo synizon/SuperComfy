@@ -9,8 +9,8 @@ SUPERCOMFY — QUICK INSTRUCTIONS
 
 2. RUN
    ./run.sh
-   Pick a speed preset (1=pytorch default, 2=sage fastest, 3=flash,
-   4=comfy-kitchen). Open the printed URL: http://127.0.0.1:8188 locally,
+   Pick a speed preset (1=pytorch default, 2=comfy-kitchen fastest).
+   Open the printed URL: http://127.0.0.1:8188 locally,
    or the https://...proxy.runpod.net link on RunPod.
    Change the preset later: ./run.sh --select
    Stop with Ctrl+C.
