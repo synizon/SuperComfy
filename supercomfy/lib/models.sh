@@ -40,14 +40,14 @@ remote_size() {
 }
 
 ensure_hf_cli() {
-  [ -x "$VENV_DIR/bin/huggingface-cli" ] && return 0
+  [ -x "$VENV_DIR/bin/hf" ] && return 0
   step "Installing huggingface_hub (HF downloader)"
   uv pip install --python "$VENV_PY" -c "$CONSTRAINTS_FILE" 'huggingface_hub[cli]' \
     > "$CACHE_DIR/hf-cli-install.log" 2>&1 || return 1
-  [ -x "$VENV_DIR/bin/huggingface-cli" ]
+  [ -x "$VENV_DIR/bin/hf" ]
 }
 
-# hf_fetch URL TARGET — download an HF resolve/blob URL with huggingface-cli
+# hf_fetch URL TARGET — download an HF resolve/blob URL with the hf CLI
 # (respects HF_TOKEN, resumes). Returns 1 if the URL has no file path.
 hf_fetch() {
   local url="$1" target="$2" parsed repo rev path tmp
@@ -62,7 +62,7 @@ PY
   IFS=$'\t' read -r repo rev path <<< "$parsed"
   ensure_hf_cli || return 1
   tmp="$CACHE_DIR/hf-tmp"
-  HF_TOKEN="${HF_TOKEN:-}" "$VENV_DIR/bin/huggingface-cli" download \
+  HF_TOKEN="${HF_TOKEN:-}" "$VENV_DIR/bin/hf" download \
     "$repo" "$path" --revision "$rev" --local-dir "$tmp" >/dev/null || return 1
   mkdir -p "$(dirname "$target")"
   mv -f "$tmp/$path" "$target"
@@ -102,7 +102,7 @@ download_model() {
   fi
   if is_hf_url "$url"; then
     hf_fetch "$url" "$target" \
-      || { warn "$name: huggingface-cli path failed — trying direct download"; direct_fetch "$url" "$target"; } \
+      || { warn "$name: hf CLI path failed — trying direct download"; direct_fetch "$url" "$target"; } \
       || { warn "$name: download failed"; return 1; }
   else
     direct_fetch "$url" "$target" || { warn "$name: download failed"; return 1; }
@@ -135,7 +135,7 @@ PY
 )" || die "Could not read a repo id from: $target"
         ensure_hf_cli || die "huggingface_hub install failed (see cache/hf-cli-install.log)"
         tmp="$CACHE_DIR/lora-tmp"
-        HF_TOKEN="${HF_TOKEN:-}" "$VENV_DIR/bin/huggingface-cli" download \
+        HF_TOKEN="${HF_TOKEN:-}" "$VENV_DIR/bin/hf" download \
           "$repo" --include '*.safetensors' --local-dir "$tmp" >/dev/null \
           || die "Download failed for $repo"
         find "$tmp" -name '*.safetensors' -exec mv -f {} "$LORAS_DIR/" \;

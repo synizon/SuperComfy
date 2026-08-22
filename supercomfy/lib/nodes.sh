@@ -51,8 +51,12 @@ install_node() {
     [ -f "$CONSTRAINTS_FILE" ] || die "Missing $CONSTRAINTS_FILE — run ./install.sh"
     # shellcheck source=/dev/null
     source "$LANE_FILE"
+    # unsafe-best-match: node deps live on PyPI but some names also exist (old)
+    # on the torch index — let uv pick the best across both. The +cu130 torch
+    # constraint still only matches the torch-index wheel, so torch stays safe.
     if ! uv pip install --python "$VENV_PY" -r "$dir/requirements.txt" \
         -c "$CONSTRAINTS_FILE" --extra-index-url "$TORCH_INDEX" \
+        --index-strategy unsafe-best-match \
         > "$CACHE_DIR/node-$name.log" 2>&1; then
       warn "$name: requirements conflict with the pinned torch stack (see cache/node-$name.log) — node installed without them"
       torch_verify_repair
