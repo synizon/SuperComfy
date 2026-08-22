@@ -1,0 +1,112 @@
+name: RunPod image
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_builder:
+        description: Builder base image (needs nvcc for SageAttention)
+        default: nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04
+      base_final:
+        description: Final base image
+        default: nvidia/cuda:13.0.3-base-ubuntu24.04
+      torch_index_url:
+        description: PyTorch wheel index (sets the cu lane)
+        default: https://download.pytorch.org/whl/cu130
+      torch_version:
+        description: torch version
+        default: 2.13.0
+      torchvision_version:
+        description: torchvision version
+        default: 0.28.0
+      torchaudio_version:
+        description: torchaudio version
+        default: 2.11.0
+      comfyui_ref:
+        description: ComfyUI release tag baked into the image
+        default: v0.33.3
+      push_latest:
+        description: Also tag :latest
+        type: boolean
+        default: true
+      layer_compression:
+        description: Layer compression (zstd extracts ~4-6x faster on pod start)
+        type: choice
+        options: [zstd, gzip]
+        default: zstd
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The devel base + cu130 torch need more space than the stock runner has free.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
+          df -h /
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Compute tags
+        id: tags
+        run: |
+          owner="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          image="ghcr.io/${owner}/supercomfy"
+          date_tag="$(date -u +%Y%m%d)-${GITHUB_SHA::7}"
+          cuda="$(echo "${{ inputs.base_final }}" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
+          {
+            echo "image=$image"
+            echo "date_tag=$date_tag"
+            echo "cuda_tag=cuda-$cuda"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        run: |
+          docker buildx create --use
+          tags=(-t "${{ steps.tags.outputs.image }}:${{ steps.tags.outputs.date_tag }}"
+                -t "${{ steps.tags.outputs.image }}:${{ steps.tags.outputs.cuda_tag }}")
+          if [ "${{ inputs.push_latest }}" = "true" ]; then
+            tags+=(-t "${{ steps.tags.outputs.image }}:latest")
+          fi
+          docker buildx build \
+            -f deploy/runpod/Dockerfile \
+            --build-arg BASE_BUILDER="${{ inputs.base_builder }}" \
+            --build-arg BASE_FINAL="${{ inputs.base_final }}" \
+            --build-arg TORCH_INDEX_URL="${{ inputs.torch_index_url }}" \
+            --build-arg TORCH_VERSION="${{ inputs.torch_version }}" \
+            --build-arg TORCHVISION_VERSION="${{ inputs.torchvision_version }}" \
+            --build-arg TORCHAUDIO_VERSION="${{ inputs.torchaudio_version }}" \
+            --build-arg COMFYUI_REF="${{ inputs.comfyui_ref }}" \
+            --output "type=image,push=true,compression=${{ inputs.layer_compression }},force-compression=true,oci-mediatypes=true" \
+            "${tags[@]}" \
+            .
+
+      - name: Verify pushed layer compression
+        run: |
+          ref="${{ steps.tags.outputs.image }}:${{ steps.tags.outputs.date_tag }}"
+          docker buildx imagetools inspect --raw "$ref" > index.json
+          digest="$(jq -r '.manifests[] | select(.platform.architecture != "unknown") | .digest' index.json | head -n1)"
+          docker buildx imagetools inspect --raw "${{ steps.tags.outputs.image }}@$digest" > manifest.json
+          jq -r '.layers[].mediaType' manifest.json | sort | uniq -c
+          case "${{ inputs.layer_compression }}" in
+            zstd) want='zstd' ;;
+            gzip) want='gzip' ;;
+          esac
+          jq -e --arg want "$want" '[.layers[].mediaType] | all(test($want))' manifest.json
+
+      - name: Summary
+        run: |
+          {
+            echo "## RunPod image pushed"
+            echo "- image: \`${{ steps.tags.outputs.image }}\`"
+            echo "- tags: \`${{ steps.tags.outputs.date_tag }}\`, \`${{ steps.tags.outputs.cuda_tag }}\`$([ "${{ inputs.push_latest }}" = "true" ] && echo ', `latest`')"
+            echo "- torch: \`${{ inputs.torch_version }}\` @ \`${{ inputs.torch_index_url }}\`"
+            echo "- ComfyUI baked: \`${{ inputs.comfyui_ref }}\`"
+            echo "- compression: \`${{ inputs.layer_compression }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
