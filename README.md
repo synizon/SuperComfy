@@ -27,8 +27,12 @@ that would be installed, without changing anything.
 ./run.sh
 ```
 
-Or skip the terminal: the installer adds a **SuperComfy** entry to your app
-menu (desktop machines only) that runs run.sh in a terminal window.
+Or skip the terminal: double-click **SuperComfy-Install.desktop** (first
+time) and **SuperComfy.desktop** in the repo folder — your file manager may
+ask once to confirm running them. The installer also adds a **SuperComfy**
+entry to your app menu (desktop machines only). Some file managers (e.g.
+GNOME Files) refuse to launch .desktop files from regular folders — use the
+app-menu entry there.
 
 First run asks for a speed/quality preset (saved to `.env`, change later with
 `./run.sh --select`):

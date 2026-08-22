@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=SuperComfy
+Comment=Start ComfyUI (dashboard at http://localhost:8080)
+Exec=bash -c "cd \\"\\$(dirname \\"\\$1\\")\\" && exec ./run.sh" _ %k
+Terminal=true
+Icon=applications-graphics
+Categories=Graphics;
