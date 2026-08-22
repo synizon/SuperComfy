@@ -17,7 +17,12 @@ ARG TORCH_VERSION=2.13.0
 ARG TORCHVISION_VERSION=0.28.0
 ARG TORCHAUDIO_VERSION=2.11.0
 ARG COMFYUI_REF=v0.33.3
-ARG SAGE_REF=v2.2.0
+# woct0rdho's fork of thu-ml/SageAttention: upstream passes every -gencode to
+# every extension, so a multi-arch list mixing Hopper (9.0) and Blackwell (12.0)
+# fails (wgmma PTX can't target sm_120). The fork scopes arch flags per
+# extension; it still builds and reports sageattention 2.2.0.
+ARG SAGE_REPO=https://github.com/woct0rdho/SageAttention.git
+ARG SAGE_REF=v2.2.0-windows.post6
 # Every arch SageAttention 2.2 supports on CUDA 13 hosts (Ampere..Blackwell).
 ARG TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0;12.0"
 
@@ -102,7 +107,7 @@ RUN uv pip install --python "$VENV_PY" setuptools wheel packaging ninja \
     && echo "Compiling SageAttention with MAX_JOBS=$jobs" \
     && MAX_JOBS="$jobs" uv pip install --python "$VENV_PY" \
         -c "$CONSTRAINTS" --no-build-isolation \
-        "git+https://github.com/thu-ml/SageAttention.git@${SAGE_REF}"
+        "git+${SAGE_REPO}@${SAGE_REF}"
 
 # Park the nvidia CUDA libs (~half the venv) behind a symlink so the final
 # stage can copy them as their own layer — two big layers pull in parallel.
