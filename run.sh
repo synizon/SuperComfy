@@ -44,22 +44,14 @@ py_has() { "$VENV_PY" -c "import $1" >/dev/null 2>&1; }
 if [ -z "${COMFY_ATTENTION:-}" ] || [ "$RESELECT" -eq 1 ]; then
   if [ -t 0 ]; then
     step "Speed / quality preset"
-    has_sage=0; has_flash=0; has_ck=0
-    py_has sageattention && has_sage=1
-    py_has flash_attn && has_flash=1
+    has_ck=0
     py_has comfy_kitchen && has_ck=1
     avail() { [ "$1" -eq 1 ] && printf '' || printf ' %s(not installed)%s' "$C_DIM" "$C_RESET"; }
     printf '  1) pytorch        — default cross-attention, always works\n'
-    printf '  2) sage           — SageAttention 2.2, fastest on RTX 30xx+%b\n' "$(avail $has_sage)"
-    printf '  3) flash          — FlashAttention 2%b\n' "$(avail $has_flash)"
-    printf '  4) comfy-kitchen  — Comfy-Org optimized kernels%b\n' "$(avail $has_ck)"
-    read -rp "  Choose [1-4] (default 1): " choice
+    printf '  2) comfy-kitchen  — Comfy-Org optimized kernels, fastest%b\n' "$(avail $has_ck)"
+    read -rp "  Choose [1-2] (default 1): " choice
     case "${choice:-1}" in
-      2) [ "$has_sage" -eq 1 ] || die "SageAttention is not installed — re-run ./install.sh with nvcc available"
-         COMFY_ATTENTION=sage ;;
-      3) [ "$has_flash" -eq 1 ] || die "flash-attn is not installed"
-         COMFY_ATTENTION=flash ;;
-      4) [ "$has_ck" -eq 1 ] || die "comfy-kitchen is not installed"
+      2) [ "$has_ck" -eq 1 ] || die "comfy-kitchen is not installed — re-run ./install.sh"
          COMFY_ATTENTION=comfy-kitchen ;;
       *) COMFY_ATTENTION=pytorch ;;
     esac
@@ -74,8 +66,6 @@ fi
 
 comfy_args=()
 case "$COMFY_ATTENTION" in
-  sage)          comfy_args+=(--use-sage-attention) ;;
-  flash)         comfy_args+=(--use-flash-attention) ;;
   comfy-kitchen) comfy_args+=(--use-ck-attention) ;;
   pytorch|*)     comfy_args+=(--use-pytorch-cross-attention) ;;
 esac

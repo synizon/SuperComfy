@@ -40,9 +40,7 @@ First run asks for a speed/quality preset (saved to `.env`, change later with
 | Preset | Flag | Notes |
 | --- | --- | --- |
 | pytorch | `--use-pytorch-cross-attention` | default, always works |
-| sage | `--use-sage-attention` | SageAttention 2.2, fastest on RTX 30xx+ (needs nvcc at install time) |
-| flash | `--use-flash-attention` | FlashAttention 2 (prebuilt wheel, when available) |
-| comfy-kitchen | `--use-ck-attention` | Comfy-Org optimized kernels |
+| comfy-kitchen | `--use-ck-attention` | Comfy-Org optimized kernels, fastest |
 
 Then open http://127.0.0.1:8188 (or the printed RunPod proxy URL).
 
@@ -116,7 +114,7 @@ skipped. Set `HF_TOKEN` in `.env` for gated/faster HuggingFace downloads.
 ## RunPod
 
 Deploy the prebuilt image `ghcr.io/synizon/supercomfy` — everything is baked
-(torch cu130, SageAttention compiled, JupyterLab, Caddy) and ComfyUI updates
+(torch cu130, comfy-kitchen, JupyterLab, Caddy) and ComfyUI updates
 itself to the latest release at every pod start. Template: 400 GB container
 disk, a 35 GB volume at `/persistent` (mirrors workflows/outputs/`.env` for
 durability), HTTP ports 8080/8188/8888, env `COMFY_AUTH` (required) +

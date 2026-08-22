@@ -35,8 +35,8 @@ if [ "${PRELOAD_NODES:-0}" = "1" ]; then
   ./downloadnodes.sh --all || warn "Some custom nodes failed — re-run ./downloadnodes.sh from a terminal."
 fi
 
-# Image defaults: SageAttention preset (compiled in), JupyterLab on.
-export COMFY_ATTENTION="${COMFY_ATTENTION:-sage}"
+# Image defaults: comfy-kitchen preset (baked in), JupyterLab on.
+export COMFY_ATTENTION="${COMFY_ATTENTION:-comfy-kitchen}"
 export JUPYTER_ENABLE="${JUPYTER_ENABLE:-1}"
 
 if [ -z "${COMFY_AUTH:-}" ] && [ "${SUPERCOMFY_INSECURE:-0}" != "1" ]; then
