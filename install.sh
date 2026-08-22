@@ -139,6 +139,10 @@ else
 fi
 
 # SageAttention 2.2.0 must be compiled (PyPI's package is a stale 1.x). Needs nvcc.
+# CUDA toolkit installs often leave nvcc off PATH — pick it up from /usr/local/cuda.
+if ! command -v nvcc >/dev/null 2>&1 && [ -x /usr/local/cuda/bin/nvcc ]; then
+  export PATH="/usr/local/cuda/bin:$PATH"
+fi
 if [ "${SUPERCOMFY_SAGE:-1}" = "1" ] && command -v nvcc >/dev/null 2>&1; then
   step "Building SageAttention 2.2.0 from source (this takes a few minutes)"
   arch="$("$VENV_PY" -c 'import torch; c=torch.cuda.get_device_capability(); print(f"{c[0]}.{c[1]}")' 2>/dev/null || true)"
